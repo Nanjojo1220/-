@@ -1,14 +1,33 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Diagnostics.Eventing.Reader;
+using System.Security.Cryptography;
+using System.Threading;
 using UnityEngine;
+
+
 
 public class PlayerController : MonoBehaviour
 {
     [SerializeField]
-    float moveSpeedIn;//プレイヤーの移動速度を入力
+    float moveSpeedIn = 5f;//プレイヤーの移動速度を入力
+    [SerializeField]
+    float dashMultiplier = 2f;
 
-
+    Animator animator;
     Rigidbody playerRb;//プレイヤーのRigidbody
+    Status playerStatus = Status.GROUND;//プレイヤーの状態
+
+    float firstSpeed = 16.0f;//初速
+    const float gravity = 120.0f;//重力
+    const float jumpLowerLimit = 0.03f;//ジャンプ時間の下限
+
+    float timer = 0f;//経過時間
+    bool jumpKey = false;//ジャンプキー
+    bool keyLook = false;//キー入力を受け付けない
+
 
     Vector3 moveSpeed;//プレイヤーの移動速度
 
@@ -32,8 +51,11 @@ public class PlayerController : MonoBehaviour
     float rotAngle;//現在の回転する角度
 
     Quaternion nextRot;//どんくらい回転するか
+
     void Start()
     {
+        animator = GetComponent<Animator>();
+
         playerRb = GetComponent<Rigidbody>();
 
         pastPos = transform.position;
@@ -48,28 +70,46 @@ public class PlayerController : MonoBehaviour
         //カメラに対して右を取得
         Vector3 cameraRight = Vector3.Scale(Camera.main.transform.right, new Vector3(1, 0, 1)).normalized;
 
+
+        float currentSpeed = moveSpeedIn;
+
+        if (Input.GetKey(KeyCode.LeftShift))
+        {
+            currentSpeed *= dashMultiplier;
+        }
+
         //moveVelocityを0で初期化する
         moveSpeed = Vector3.zero;
 
         //移動入力
         if (Input.GetKey(KeyCode.W))
         {
-            moveSpeed = moveSpeedIn * cameraForward;
+            moveSpeed += currentSpeed * cameraForward;
         }
 
         if (Input.GetKey(KeyCode.A))
         {
-            moveSpeed = -moveSpeedIn * cameraRight;
+            moveSpeed  += -currentSpeed * cameraRight;
         }
 
         if (Input.GetKey(KeyCode.S))
         {
-            moveSpeed = -moveSpeedIn * cameraForward;
+            moveSpeed  += -currentSpeed * cameraForward;
         }
 
         if (Input.GetKey(KeyCode.D))
         {
-            moveSpeed = moveSpeedIn * cameraRight;
+            moveSpeed  += currentSpeed * cameraRight;
+        }
+
+        if (Input.GetKey(KeyCode.Space))
+        {
+            jumpKey = !keyLook;
+        }
+        else
+        {
+            jumpKey = false;
+            keyLook = false;
         }
 
         //Moveメソッドで、力加えてもらう
@@ -109,6 +149,27 @@ public class PlayerController : MonoBehaviour
 
         transform.rotation = nextRot;
 
+        //アニメーター設定
+        if (moveSpeed.magnitude > 0.1f) //入力があるときだけうごかす
+        {
+            playerRb.MovePosition(transform.position + moveSpeed.normalized * currentSpeed * Time.deltaTime);
+
+            if (currentSpeed > moveSpeedIn)
+            {
+                animator.SetBool("Run", true);
+                animator.SetBool("walk", false);
+            }
+            else if (currentSpeed > 0.1f)
+            {
+                animator.SetBool("walk", true);
+                animator.SetBool("Run", false);
+            }
+        }
+        else
+        {
+            animator.SetBool("walk", false);
+            animator.SetBool("Run", false);
+        }
     }
 
     /// <summary>
@@ -119,5 +180,69 @@ public class PlayerController : MonoBehaviour
         //playerRb.AddForce(moveSpeed, ForceMode.Force);
 
         playerRb.velocity = moveSpeed;
+    }
+    void FixedUpdate()
+    {
+        Vector3 newvec = Vector3.zero;
+
+        switch(playerStatus)
+        {
+            case Status.GROUND:
+                if(jumpKey)
+                {
+                    playerStatus = Status.UP;
+                }
+                break;
+
+            case Status.UP:
+                timer += Time.deltaTime;
+
+                if(jumpKey || jumpLowerLimit > timer)
+                {
+                    newvec.y = firstSpeed;
+                    newvec.y -= (gravity * Mathf.Pow(timer, 2));
+                }
+
+                else
+                {
+                    timer += Time.deltaTime;
+                    newvec.y = firstSpeed;
+                    newvec.y -= (gravity * Mathf.Pow(timer, 2));
+                }
+
+                if (0f > newvec.y)
+                {
+                    playerStatus = Status.DOWN;
+                    newvec.y = 0f;
+                    timer = 0.1f;
+                }
+                break;
+
+            case Status.DOWN:
+                timer += Time.deltaTime;
+
+                newvec.y = 0f;
+                newvec.y = -(gravity * Mathf.Pow(timer, 2));
+                break;
+
+            default:
+                break;
+        }
+
+        Vector3 finalVelocity = moveSpeed;
+        finalVelocity.y = newvec.y;
+
+        playerRb.velocity = finalVelocity;
+    }
+
+    void OnCollisionStay(Collision collision)
+    {
+        if(playerStatus == Status.DOWN &&
+            collision.gameObject.name.Contains("Ground"))
+        {
+            playerStatus = Status.GROUND;
+            timer = 0f;
+            keyLook = true;
+        }
     }
 }
