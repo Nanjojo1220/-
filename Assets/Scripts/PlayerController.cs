@@ -9,240 +9,127 @@ using UnityEngine;
 
 
 
+using UnityEngine;
+
 public class PlayerController : MonoBehaviour
 {
-    [SerializeField]
-    float moveSpeedIn = 5f;//プレイヤーの移動速度を入力
-    [SerializeField]
-    float dashMultiplier = 2f;
+    [Header("移動")]
+    [SerializeField] private float walkSpeed = 5f;   // 歩き速度
+    [SerializeField] private float dashMultiplier = 2f; // ダッシュ倍率
+    [SerializeField] private float rotationSpeed = 10f; // 回転速度
 
-    Animator animator;
-    Rigidbody playerRb;//プレイヤーのRigidbody
-    Status playerStatus = Status.GROUND;//プレイヤーの状態
+    [Header("ジャンプ")]
+    [SerializeField] private float jumpPower = 16f;  // ジャンプ初速
+    [SerializeField] private float jumpCutPower = 0.5f; // 小ジャンプ倍率（キー離した時に掛ける）
 
-    float firstSpeed = 16.0f;//初速
-    const float gravity = 120.0f;//重力
-    const float jumpLowerLimit = 0.03f;//ジャンプ時間の下限
+    [Header("重力")]
+    [SerializeField] private float fallMultiplier = 2.5f; // 落下時の重力倍率
+    [SerializeField] private float lowJumpMultiplier = 2f; // 短押し時の重力倍率
 
-    float timer = 0f;//経過時間
-    bool jumpKey = false;//ジャンプキー
-    bool keyLook = false;//キー入力を受け付けない
+    private Rigidbody rb;
+    private Animator animator;
 
-
-    Vector3 moveSpeed;//プレイヤーの移動速度
-
-    Vector3 currentPos;//プレイヤーの現在の位置
-    Vector3 pastPos;//プレイヤーの過去の位置
-
-    Vector3 delta;//プレイヤーの移動量
-
-    Quaternion playerRot;//プレイヤーの進行方向を向くクォータニオン
-
-    float currentAngularVelocity;//現在の回転各速度
-
-    [SerializeField]
-    float maxAngularVelocity = Mathf.Infinity;//最大の回転角速度[deg/s]
-
-    [SerializeField]
-    float smoothTime = 0.1f;//進行方向にかかるおおよその時間[s]
-
-    float diffAngle;//現在の向きと進行方向の角度
-
-    float rotAngle;//現在の回転する角度
-
-    Quaternion nextRot;//どんくらい回転するか
+    private bool isGrounded = true;
 
     void Start()
     {
+        rb = GetComponent<Rigidbody>();
         animator = GetComponent<Animator>();
-
-        playerRb = GetComponent<Rigidbody>();
-
-        pastPos = transform.position;
     }
 
     void Update()
     {
-        //------プレイヤーの移動------
-
-        //カメラに対して前を取得
-        Vector3 cameraForward = Vector3.Scale(Camera.main.transform.forward, new Vector3(1, 0, 1)).normalized;
-        //カメラに対して右を取得
-        Vector3 cameraRight = Vector3.Scale(Camera.main.transform.right, new Vector3(1, 0, 1)).normalized;
-
-
-        float currentSpeed = moveSpeedIn;
-
-        if (Input.GetKey(KeyCode.LeftShift))
-        {
-            currentSpeed *= dashMultiplier;
-        }
-
-        //moveVelocityを0で初期化する
-        moveSpeed = Vector3.zero;
-
-        //移動入力
-        if (Input.GetKey(KeyCode.W))
-        {
-            moveSpeed += currentSpeed * cameraForward;
-        }
-
-        if (Input.GetKey(KeyCode.A))
-        {
-            moveSpeed  += -currentSpeed * cameraRight;
-        }
-
-        if (Input.GetKey(KeyCode.S))
-        {
-            moveSpeed  += -currentSpeed * cameraForward;
-        }
-
-        if (Input.GetKey(KeyCode.D))
-        {
-            moveSpeed  += currentSpeed * cameraRight;
-        }
-
-        if (Input.GetKey(KeyCode.Space))
-        {
-            jumpKey = !keyLook;
-        }
-        else
-        {
-            jumpKey = false;
-            keyLook = false;
-        }
-
-        //Moveメソッドで、力加えてもらう
-        Move();
-
-        //慣性を消す
-        if (Input.GetKeyUp(KeyCode.W) || Input.GetKeyUp(KeyCode.A) || Input.GetKeyUp(KeyCode.S) || Input.GetKeyUp(KeyCode.D))
-        {
-            //playerRb.velocity = Vector3.zero;
-            // playerRb.angularVelocity = Vector3.zero;
-        }
-
-        //------プレイヤーの回転------
-
-        //現在の位置
-        currentPos = transform.position;
-
-        //移動量計算
-        delta = currentPos - pastPos;
-        delta.y = 0;
-
-        //過去の位置の更新
-        pastPos = currentPos;
-
-        if (delta == Vector3.zero)
-            return;
-
-        playerRot = Quaternion.LookRotation(delta, Vector3.up);
-
-        diffAngle = Vector3.Angle(transform.forward, delta);
-
-        //Vector3.SmoothDampはVector3型の値を徐々に変化させる
-        //Vector3.SmoothDamp (現在地, 目的地, ref 現在の速度, 遷移時間, 最高速度);
-        rotAngle = Mathf.SmoothDampAngle(0, diffAngle, ref currentAngularVelocity, smoothTime, maxAngularVelocity);
-
-        nextRot = Quaternion.RotateTowards(transform.rotation, playerRot, rotAngle);
-
-        transform.rotation = nextRot;
-
-        //アニメーター設定
-        if (moveSpeed.magnitude > 0.1f) //入力があるときだけうごかす
-        {
-            playerRb.MovePosition(transform.position + moveSpeed.normalized * currentSpeed * Time.deltaTime);
-
-            if (currentSpeed > moveSpeedIn)
-            {
-                animator.SetBool("Run", true);
-                animator.SetBool("walk", false);
-            }
-            else if (currentSpeed > 0.1f)
-            {
-                animator.SetBool("walk", true);
-                animator.SetBool("Run", false);
-            }
-        }
-        else
-        {
-            animator.SetBool("walk", false);
-            animator.SetBool("Run", false);
-        }
+        HandleMovement();
+        HandleJump();
     }
 
-    /// <summary>
-    /// 移動方向に力を加える
-    /// </summary>
-    private void Move()
+    private void HandleMovement()
     {
-        //playerRb.AddForce(moveSpeed, ForceMode.Force);
+        // カメラ基準の前後左右
+        Vector3 camForward = Vector3.Scale(Camera.main.transform.forward, new Vector3(1, 0, 1)).normalized;
+        Vector3 camRight = Vector3.Scale(Camera.main.transform.right, new Vector3(1, 0, 1)).normalized;
 
-        playerRb.velocity = moveSpeed;
+        // 入力
+        Vector3 input = Vector3.zero;
+        if (Input.GetKey(KeyCode.W)) input += camForward;
+        if (Input.GetKey(KeyCode.S)) input -= camForward;
+        if (Input.GetKey(KeyCode.A)) input -= camRight;
+        if (Input.GetKey(KeyCode.D)) input += camRight;
+
+        // 速度
+        float currentSpeed = walkSpeed;
+        if (Input.GetKey(KeyCode.LeftShift)) currentSpeed *= dashMultiplier;
+
+        Vector3 velocity = rb.velocity;
+        Vector3 move = input.normalized * currentSpeed;
+
+        velocity.x = move.x;
+        velocity.z = move.z;
+        rb.velocity = velocity;
+
+        // 回転
+        if (input != Vector3.zero)
+        {
+            Quaternion targetRot = Quaternion.LookRotation(input, Vector3.up);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * rotationSpeed);
+        }
+
+        // アニメーション（任意）
+        if (animator != null)
+        {
+            bool isMoving = input.magnitude > 0.1f;
+            animator.SetBool("walk", isMoving && !Input.GetKey(KeyCode.LeftShift));
+            animator.SetBool("Run", isMoving && Input.GetKey(KeyCode.LeftShift));
+        }
     }
+
     void FixedUpdate()
     {
-        Vector3 newvec = Vector3.zero;
+        Vector3 vel = rb.velocity;
 
-        switch(playerStatus)
+        // 上昇中 → スペースを離したら低めジャンプに
+        if (vel.y > 0 && !Input.GetKey(KeyCode.Space))
         {
-            case Status.GROUND:
-                if(jumpKey)
-                {
-                    playerStatus = Status.UP;
-                }
-                break;
-
-            case Status.UP:
-                timer += Time.deltaTime;
-
-                if(jumpKey || jumpLowerLimit > timer)
-                {
-                    newvec.y = firstSpeed;
-                    newvec.y -= (gravity * Mathf.Pow(timer, 2));
-                }
-
-                else
-                {
-                    timer += Time.deltaTime;
-                    newvec.y = firstSpeed;
-                    newvec.y -= (gravity * Mathf.Pow(timer, 2));
-                }
-
-                if (0f > newvec.y)
-                {
-                    playerStatus = Status.DOWN;
-                    newvec.y = 0f;
-                    timer = 0.1f;
-                }
-                break;
-
-            case Status.DOWN:
-                timer += Time.deltaTime;
-
-                newvec.y = 0f;
-                newvec.y = -(gravity * Mathf.Pow(timer, 2));
-                break;
-
-            default:
-                break;
+            vel.y += Physics.gravity.y * (lowJumpMultiplier - 1) * Time.deltaTime;
+        }
+        // 落下中 → 重力を強める
+        else if (vel.y < 0)
+        {
+            vel.y += Physics.gravity.y * (fallMultiplier - 1) * Time.deltaTime;
         }
 
-        Vector3 finalVelocity = moveSpeed;
-        finalVelocity.y = newvec.y;
+        rb.velocity = vel;
+    }
 
-        playerRb.velocity = finalVelocity;
+    private void HandleJump()
+    {
+        // ジャンプ開始
+        if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
+        {
+            rb.velocity = new Vector3(rb.velocity.x, jumpPower, rb.velocity.z);
+            isGrounded = false;
+        }
+
+        // 小ジャンプ（キーを離したら上昇をカット）
+        if (Input.GetKeyUp(KeyCode.Space) && rb.velocity.y > 0f)
+        {
+            rb.velocity = new Vector3(rb.velocity.x, rb.velocity.y * jumpCutPower, rb.velocity.z);
+        }
     }
 
     void OnCollisionStay(Collision collision)
     {
-        if(playerStatus == Status.DOWN &&
-            collision.gameObject.name.Contains("Ground"))
+        if (collision.gameObject.CompareTag("Ground"))
         {
-            playerStatus = Status.GROUND;
-            timer = 0f;
-            keyLook = true;
+            isGrounded = true;
+        }
+    }
+
+    void OnCollisionExit(Collision collision)
+    {
+        if (collision.gameObject.CompareTag("Ground"))
+        {
+            isGrounded = false;
         }
     }
 }

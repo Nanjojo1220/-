@@ -19,6 +19,6 @@ public class TitleBotton : MonoBehaviour
 
     public void onClickStartButton()
     {
-        SceneManager.LoadScene("SampleScene");
+        SceneManager.LoadScene("1-1");
     }
 }

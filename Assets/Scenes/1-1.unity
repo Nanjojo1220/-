@@ -363,10 +363,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 24d0d5a81199a994ebaf2de39a71d2b5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeedIn: 5
+  walkSpeed: 5
   dashMultiplier: 2
-  maxAngularVelocity: Infinity
-  smoothTime: 0.02
+  rotationSpeed: 10
+  jumpPower: 9
+  jumpCutPower: 0.5
+  fallMultiplier: 2
+  lowJumpMultiplier: 2
 --- !u!1 &1099624680
 GameObject:
   m_ObjectHideFlags: 0
