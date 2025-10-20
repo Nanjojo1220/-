@@ -1,14 +1,5 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Diagnostics.Eventing.Reader;
-using System.Security.Cryptography;
-using System.Threading;
-using UnityEngine;
-
-
-
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour
@@ -20,45 +11,56 @@ public class PlayerController : MonoBehaviour
 
     [Header("ジャンプ")]
     [SerializeField] private float jumpPower = 16f;  // ジャンプ初速
-    [SerializeField] private float jumpCutPower = 0.5f; // 小ジャンプ倍率（キー離した時に掛ける）
+    [SerializeField] private float jumpCutPower = 0.5f; // 小ジャンプ倍率
 
     [Header("重力")]
-    [SerializeField] private float fallMultiplier = 2.5f; // 落下時の重力倍率
-    [SerializeField] private float lowJumpMultiplier = 2f; // 短押し時の重力倍率
+    [SerializeField] private float fallMultiplier = 2.5f;
+    [SerializeField] private float lowJumpMultiplier = 2f;
 
     private Rigidbody rb;
     private Animator animator;
-
     private bool isGrounded = true;
+
+    //  右スティックカメラ制御用
+    [Header("カメラ操作")]
+    [SerializeField] private Transform cameraPivot;  // カメラの親（ターゲット）
+    [SerializeField] private float cameraRotateSpeed = 120f;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         animator = GetComponent<Animator>();
+
+        // カメラPivotが未設定なら、自動でメインカメラの親を探す
+        if (cameraPivot == null && Camera.main != null)
+        {
+            cameraPivot = Camera.main.transform.parent != null ? Camera.main.transform.parent : Camera.main.transform;
+        }
     }
 
     void Update()
     {
+        HandleCameraRotation();
         HandleMovement();
         HandleJump();
     }
 
     private void HandleMovement()
     {
-        // カメラ基準の前後左右
-        Vector3 camForward = Vector3.Scale(Camera.main.transform.forward, new Vector3(1, 0, 1)).normalized;
-        Vector3 camRight = Vector3.Scale(Camera.main.transform.right, new Vector3(1, 0, 1)).normalized;
+        Camera cam = Camera.main;
+        Vector3 camForward = Vector3.Scale(cam.transform.forward, new Vector3(1, 0, 1)).normalized;
+        Vector3 camRight = Vector3.Scale(cam.transform.right, new Vector3(1, 0, 1)).normalized;
 
-        // 入力
-        Vector3 input = Vector3.zero;
-        if (Input.GetKey(KeyCode.W)) input += camForward;
-        if (Input.GetKey(KeyCode.S)) input -= camForward;
-        if (Input.GetKey(KeyCode.A)) input -= camRight;
-        if (Input.GetKey(KeyCode.D)) input += camRight;
+        float horizontal = Input.GetAxis("Horizontal");
+        float vertical = Input.GetAxis("Vertical");
 
-        // 速度
+        Vector3 input = (camForward * vertical + camRight * horizontal);
+
+        //ダッシュは Shift か L3（ジョイスティック押し込み）
+        bool isDash = Input.GetKey(KeyCode.LeftShift) || Input.GetButton("Fire3");
+
         float currentSpeed = walkSpeed;
-        if (Input.GetKey(KeyCode.LeftShift)) currentSpeed *= dashMultiplier;
+        if (isDash) currentSpeed *= dashMultiplier;
 
         Vector3 velocity = rb.velocity;
         Vector3 move = input.normalized * currentSpeed;
@@ -67,32 +69,47 @@ public class PlayerController : MonoBehaviour
         velocity.z = move.z;
         rb.velocity = velocity;
 
-        // 回転
-        if (input != Vector3.zero)
+        // 回転処理
+        if (input.sqrMagnitude > 0.01f)
         {
-            Quaternion targetRot = Quaternion.LookRotation(input, Vector3.up);
+            Quaternion targetRot = Quaternion.LookRotation(input);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * rotationSpeed);
         }
 
-        // アニメーション（任意）
+        // アニメーション
         if (animator != null)
         {
             bool isMoving = input.magnitude > 0.1f;
-            animator.SetBool("walk", isMoving && !Input.GetKey(KeyCode.LeftShift));
-            animator.SetBool("Run", isMoving && Input.GetKey(KeyCode.LeftShift));
+            animator.SetBool("walk", isMoving && !isDash);
+            animator.SetBool("Run", isMoving && isDash);
         }
+    }
+
+    private void HandleCameraRotation()
+    {
+        if (cameraPivot == null) return;
+
+        //右スティック入力を取得（InputManagerに設定が必要）
+        float rightX = Input.GetAxis("RightStickHorizontal");
+        float rightY = Input.GetAxis("RightStickVertical");
+
+        // スティック感度を調整
+        float rotX = rightX * cameraRotateSpeed * Time.deltaTime;
+        float rotY = -rightY * cameraRotateSpeed * Time.deltaTime;
+
+        // カメラをプレイヤー中心に回転
+        cameraPivot.RotateAround(transform.position, Vector3.up, rotX);
+        cameraPivot.RotateAround(transform.position, cameraPivot.right, rotY);
     }
 
     void FixedUpdate()
     {
         Vector3 vel = rb.velocity;
 
-        // 上昇中 → スペースを離したら低めジャンプに
         if (vel.y > 0 && !Input.GetKey(KeyCode.Space))
         {
             vel.y += Physics.gravity.y * (lowJumpMultiplier - 1) * Time.deltaTime;
         }
-        // 落下中 → 重力を強める
         else if (vel.y < 0)
         {
             vel.y += Physics.gravity.y * (fallMultiplier - 1) * Time.deltaTime;
@@ -103,15 +120,13 @@ public class PlayerController : MonoBehaviour
 
     private void HandleJump()
     {
-        // ジャンプ開始
-        if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
+        if ((Input.GetButtonDown("Jump") || Input.GetKeyDown(KeyCode.Space)) && isGrounded)
         {
             rb.velocity = new Vector3(rb.velocity.x, jumpPower, rb.velocity.z);
             isGrounded = false;
         }
 
-        // 小ジャンプ（キーを離したら上昇をカット）
-        if (Input.GetKeyUp(KeyCode.Space) && rb.velocity.y > 0f)
+        if ((Input.GetButtonUp("Jump") || Input.GetKeyUp(KeyCode.Space)) && rb.velocity.y > 0f)
         {
             rb.velocity = new Vector3(rb.velocity.x, rb.velocity.y * jumpCutPower, rb.velocity.z);
         }
@@ -120,16 +135,14 @@ public class PlayerController : MonoBehaviour
     void OnCollisionStay(Collision collision)
     {
         if (collision.gameObject.CompareTag("Ground"))
-        {
             isGrounded = true;
-        }
     }
 
     void OnCollisionExit(Collision collision)
     {
         if (collision.gameObject.CompareTag("Ground"))
-        {
             isGrounded = false;
-        }
     }
 }
+
+
