@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-
 public class PlayerControlle : MonoBehaviour
 {
     [SerializeField] float moveSpeedIn = 5f; // 地上の移動速度
@@ -28,23 +27,21 @@ public class PlayerControlle : MonoBehaviour
 
     void Update()
     {
-        // --- 入力処理 ---
+        // === 入力処理 ===
+        float h = Input.GetAxis("Horizontal"); // キーボードA/D, コントローラー左スティックX
+        float v = Input.GetAxis("Vertical");   // キーボードW/S, コントローラー左スティックY
+
         Vector3 cameraForward = Vector3.Scale(Camera.main.transform.forward, new Vector3(1, 0, 1)).normalized;
         Vector3 cameraRight = Vector3.Scale(Camera.main.transform.right, new Vector3(1, 0, 1)).normalized;
 
-        moveDir = Vector3.zero;
-        if (Input.GetKey(KeyCode.W)) moveDir += cameraForward;
-        if (Input.GetKey(KeyCode.S)) moveDir -= cameraForward;
-        if (Input.GetKey(KeyCode.A)) moveDir -= cameraRight;
-        if (Input.GetKey(KeyCode.D)) moveDir += cameraRight;
+        moveDir = (cameraForward * v + cameraRight * h).normalized * moveSpeedIn;
 
-        moveDir = moveDir.normalized * moveSpeedIn;
-
-        // アニメーション制御
+        // === アニメーション制御 ===
         animator.SetBool("walk", moveDir.magnitude > 0.1f);
 
-        // --- ジャンプ入力 ---
-        if (Input.GetKeyDown(KeyCode.Space) && playerStatus == Status.GROUND)
+        // === ジャンプ入力 ===
+        bool jumpPressed = Input.GetButtonDown("Jump"); // Spaceキー or コントローラーのAボタン
+        if (jumpPressed && playerStatus == Status.GROUND)
         {
             verticalVel = jumpPower;
             playerStatus = Status.UP;
@@ -53,29 +50,27 @@ public class PlayerControlle : MonoBehaviour
 
     void FixedUpdate()
     {
-        // --- 地面判定 ---
-        Vector3 rayOrigin = transform.position + Vector3.up * 0.1f; // 少し上から判定
+        // === 地面判定 ===
+        Vector3 rayOrigin = transform.position + Vector3.up * 0.1f;
         bool isGrounded = Physics.Raycast(rayOrigin, Vector3.down, groundCheckDistance + 0.1f);
 
-        // --- 重力処理 ---
+        // === 重力処理 ===
         if (playerStatus != Status.GROUND)
         {
-            if (verticalVel > 0 && !Input.GetKey(KeyCode.Space))
+            if (verticalVel > 0 && !Input.GetButton("Jump"))
             {
-                // 小ジャンプ用の強い重力
                 verticalVel -= lowJumpGravity * Time.fixedDeltaTime;
             }
             else
             {
-                // 通常重力
                 verticalVel -= gravity * Time.fixedDeltaTime;
             }
         }
 
-        // --- 地面に着地したら ---
+        // === 着地判定 ===
         if (isGrounded && verticalVel <= 0f)
         {
-            verticalVel = -2f; // 地面に押し付ける
+            verticalVel = -2f;
             playerStatus = Status.GROUND;
         }
         else if (verticalVel > 0f)
@@ -87,11 +82,11 @@ public class PlayerControlle : MonoBehaviour
             playerStatus = Status.DOWN;
         }
 
-        // --- 実際の移動 ---
+        // === 移動処理 ===
         Vector3 finalVelocity = new Vector3(moveDir.x, verticalVel, moveDir.z);
         playerRb.velocity = finalVelocity;
 
-        // --- 向きの更新（移動方向を向く） ---
+        // === 向き制御 ===
         Vector3 flatMove = new Vector3(moveDir.x, 0, moveDir.z);
         if (flatMove.magnitude > 0.1f)
         {
