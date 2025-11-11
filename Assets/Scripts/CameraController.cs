@@ -1,28 +1,38 @@
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine;
+
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using UnityEngine;
 
 public class CameraController : MonoBehaviour
 {
     [SerializeField] private GameObject player;
-    [SerializeField] private float sensitivity = 3.0f;     // 回転感度
-    [SerializeField] private float minYAngle = -30f;       // カメラの下限角度
-    [SerializeField] private float maxYAngle = 60f;        // カメラの上限角度
-    [SerializeField] private float followSmooth = 10f;     // 追従スムーズさ
-    [SerializeField] private float cameraDistance = 6f;    // プレイヤーからの距離
+    [SerializeField] private float sensitivity = 3.0f;     
+    [SerializeField] private float minYAngle = -30f;       
+    [SerializeField] private float maxYAngle = 60f;        
+    [SerializeField] private float followSmooth = 10f;     
+    [SerializeField] private float cameraDistance = 6f;
+    [SerializeField] private float lookOffsetY = 1.5f;
+    [SerializeField] private float verticalOffset = 2.0f;
 
-    private float yaw;   // 左右回転
-    private float pitch; // 上下回転
+    private float yaw;   
+    private float pitch; 
 
-    // Dead Zone 用
+    // Dead Zone 
     private float deadZone = 0.2f;
 
+    [SerializeField] private LayerMask collisionMask; // 衝突させたいレイヤー（例：Default, Environment）
+    [SerializeField] private float cameraRadius = 0.3f; // カメラがめり込まないための半径
+
+    // Start is called before the first frame update
     void Start()
     {
         if (player == null)
         {
-            UnityEngine.Debug.LogError("CameraController: Playerが設定されていません。");
+            UnityEngine.Debug.LogError("CameraController: Playerが未設定です.");
             enabled = false;
             return;
         }
@@ -34,42 +44,52 @@ public class CameraController : MonoBehaviour
 
     void LateUpdate()
     {
-        // --- マウス入力 ---
         float mouseX = Input.GetAxis("Mouse X");
         float mouseY = Input.GetAxis("Mouse Y");
 
-        // --- 右スティック入力 ---
+
         float rightX = Input.GetAxis("RightStickHorizontal");
         float rightY = Input.GetAxis("RightStickVertical");
 
-        // Dead Zone の適用
+
         if (Mathf.Abs(rightX) < deadZone) rightX = 0f;
         if (Mathf.Abs(rightY) < deadZone) rightY = 0f;
 
-        // --- 入力感度を反映 ---
-        float inputX = mouseX * sensitivity + rightX * sensitivity;
-        float inputY = mouseY * sensitivity + rightY * sensitivity; // 上下の符号は必要に応じて反転
 
-        // --- カメラ回転 ---
+        float inputX = mouseX * sensitivity + rightX * sensitivity;
+        float inputY = mouseY * sensitivity + rightY * sensitivity; 
+
+
         yaw += inputX;
-        pitch -= inputY; // 上下回転
+        pitch -= inputY; 
         pitch = Mathf.Clamp(pitch, minYAngle, maxYAngle);
 
         Quaternion rotation = Quaternion.Euler(pitch, yaw, 0);
 
-        // --- プレイヤー後方に配置 ---
-        Vector3 targetPos = player.transform.position - rotation * Vector3.forward * cameraDistance + Vector3.up * 2.0f;
 
-        transform.position = Vector3.Lerp(transform.position, targetPos, Time.deltaTime * followSmooth);
-        transform.LookAt(player.transform.position + Vector3.up * 1.5f);
+        Vector3 targetCenter = player.transform.position + Vector3.up * verticalOffset;
+        Vector3 desiredPos = targetCenter - rotation * Vector3.forward * cameraDistance;
+
+
+        RaycastHit hit;
+        if (Physics.SphereCast(targetCenter, cameraRadius, rotation * Vector3.back, out hit, cameraDistance, collisionMask))
+        {
+            // 障害物にぶつかる前にカメラを手前に寄せる
+            desiredPos = hit.point + hit.normal * cameraRadius;
+        }
+
+        transform.position = Vector3.Lerp(transform.position, desiredPos, Time.deltaTime * followSmooth);
+        transform.LookAt(player.transform.position + Vector3.up * lookOffsetY);
+
     }
 
+    // Update is called once per frame
     void Update()
     {
-        // デバッグ用：右スティック値確認
+
         float rh = Input.GetAxis("RightStickHorizontal");
         float rv = Input.GetAxis("RightStickVertical");
         UnityEngine.Debug.Log($"Right Stick: H={rh:F2}, V={rv:F2}");
+
     }
 }
-
