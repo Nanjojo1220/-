@@ -44,6 +44,11 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        if (Input.GetButtonDown("Jump"))
+            Debug.Log("Jump detected");
+        if (Input.GetKeyDown(KeyCode.Space))
+            Debug.Log("Space detected");
+
         CheckGrounded();
 
         HandleCameraRotation();
@@ -135,19 +140,26 @@ public class PlayerController : MonoBehaviour
         rb.velocity = vel;
     }
 
+    private bool jumpHeld = false;
+
     private void HandleJump()
     {
-        if ((Input.GetButtonDown("Jump") || Input.GetKeyDown(KeyCode.Space)) && isGrounded)
+        bool jumpPressed = Input.GetButtonDown("Jump") || Input.GetKeyDown(KeyCode.Space);
+        bool jumpHeldNow = Input.GetButton("Jump") || Input.GetKey(KeyCode.Space);
+
+        if (jumpPressed && isGrounded)
         {
             rb.velocity = new Vector3(rb.velocity.x, jumpPower, rb.velocity.z);
             isGrounded = false;
         }
 
-        if ((Input.GetButtonUp("Jump") || Input.GetKeyUp(KeyCode.Space)) && rb.velocity.y > 0f)
+        // ‰Ÿ‚µ‚Ä‚¢‚È‚¢uŠÔ‚¾‚¯cutiŒë”»’è‘Îô‚ ‚èj
+        if (!jumpHeldNow && rb.velocity.y > 0f)
         {
             rb.velocity = new Vector3(rb.velocity.x, rb.velocity.y * jumpCutPower, rb.velocity.z);
         }
     }
+
 
     private void CheckGrounded()
     {

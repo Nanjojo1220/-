@@ -237,7 +237,7 @@ GameObject:
   - component: {fileID: 127338159}
   - component: {fileID: 127338158}
   - component: {fileID: 127338157}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Sphere (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -358,16 +358,40 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3875699182759147704, guid: 7f433893221f0bd43a431c55d6d6e883, type: 3}
+      propertyPath: m_Size.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3875699182759147704, guid: 7f433893221f0bd43a431c55d6d6e883, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3875699182759147704, guid: 7f433893221f0bd43a431c55d6d6e883, type: 3}
       propertyPath: m_Material
       value: 
       objectReference: {fileID: 13400000, guid: ae187b772e1d863488b8311224bd8266, type: 2}
+    - target: {fileID: 3875699182759147705, guid: 7f433893221f0bd43a431c55d6d6e883, type: 3}
+      propertyPath: jumpPower
+      value: 15
+      objectReference: {fileID: 0}
     - target: {fileID: 3875699182759147705, guid: 7f433893221f0bd43a431c55d6d6e883, type: 3}
       propertyPath: cameraPivot
       value: 
       objectReference: {fileID: 679172791}
     - target: {fileID: 3875699182759147705, guid: 7f433893221f0bd43a431c55d6d6e883, type: 3}
+      propertyPath: jumpCutPower
+      value: 0.7
+      objectReference: {fileID: 0}
+    - target: {fileID: 3875699182759147705, guid: 7f433893221f0bd43a431c55d6d6e883, type: 3}
+      propertyPath: fallMultiplier
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 3875699182759147705, guid: 7f433893221f0bd43a431c55d6d6e883, type: 3}
       propertyPath: groundMask.m_Bits
-      value: 1
+      value: 65
+      objectReference: {fileID: 0}
+    - target: {fileID: 3875699182759147705, guid: 7f433893221f0bd43a431c55d6d6e883, type: 3}
+      propertyPath: lowJumpMultiplier
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 4272241984589164724, guid: 7f433893221f0bd43a431c55d6d6e883, type: 3}
       propertyPath: player
@@ -457,6 +481,18 @@ PrefabInstance:
       propertyPath: m_Name
       value: Ground
       objectReference: {fileID: 0}
+    - target: {fileID: 6894918166310613078, guid: 7f433893221f0bd43a431c55d6d6e883, type: 3}
+      propertyPath: m_Layer
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6894918166492454128, guid: 7f433893221f0bd43a431c55d6d6e883, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 6894918166697775629, guid: 7f433893221f0bd43a431c55d6d6e883, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
     - target: {fileID: 6894918166727189983, guid: 7f433893221f0bd43a431c55d6d6e883, type: 3}
       propertyPath: m_LocalPosition.y
       value: 0.13
@@ -468,6 +504,14 @@ PrefabInstance:
     - target: {fileID: 6894918166904562545, guid: 7f433893221f0bd43a431c55d6d6e883, type: 3}
       propertyPath: m_LocalPosition.x
       value: -1.076
+      objectReference: {fileID: 0}
+    - target: {fileID: 6894918167161474013, guid: 7f433893221f0bd43a431c55d6d6e883, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 6894918167228682315, guid: 7f433893221f0bd43a431c55d6d6e883, type: 3}
+      propertyPath: m_Layer
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 6894918167413364361, guid: 7f433893221f0bd43a431c55d6d6e883, type: 3}
       propertyPath: m_LocalScale.x
@@ -489,6 +533,14 @@ PrefabInstance:
       propertyPath: m_LocalPosition.z
       value: -10.49
       objectReference: {fileID: 0}
+    - target: {fileID: 6894918167901491447, guid: 7f433893221f0bd43a431c55d6d6e883, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 6894918168001028596, guid: 7f433893221f0bd43a431c55d6d6e883, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 4272241984589164724, guid: 7f433893221f0bd43a431c55d6d6e883, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: 7f433893221f0bd43a431c55d6d6e883, type: 3}
@@ -504,7 +556,7 @@ GameObject:
   - component: {fileID: 239343124}
   - component: {fileID: 239343123}
   - component: {fileID: 239343122}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Capsule
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -602,7 +654,7 @@ GameObject:
   - component: {fileID: 402604097}
   - component: {fileID: 402604096}
   - component: {fileID: 402604095}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Sphere (4)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -900,7 +952,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   player: {fileID: 1731143079}
   sensitivity: 1
-  minYAngle: 0
+  minYAngle: 20
   maxYAngle: 50
   followSmooth: 10
   cameraDistance: 9
@@ -909,7 +961,8 @@ MonoBehaviour:
   collisionMask:
     serializedVersion: 2
     m_Bits: 1
-  cameraRadius: 0.3
+  cameraRadius: 0.6
+  rotateSmoothTime: 0.05
 --- !u!1 &724204198
 GameObject:
   m_ObjectHideFlags: 0
@@ -1116,7 +1169,7 @@ GameObject:
   - component: {fileID: 784527289}
   - component: {fileID: 784527288}
   - component: {fileID: 784527287}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Sphere (3)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1310,7 +1363,7 @@ GameObject:
   - component: {fileID: 1080092361}
   - component: {fileID: 1080092360}
   - component: {fileID: 1080092359}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Cube (17)
   m_TagString: Ground
   m_Icon: {fileID: 0}
@@ -1601,7 +1654,7 @@ GameObject:
   - component: {fileID: 1638377216}
   - component: {fileID: 1638377215}
   - component: {fileID: 1638377214}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Sphere (6)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1698,7 +1751,7 @@ GameObject:
   - component: {fileID: 1669931936}
   - component: {fileID: 1669931935}
   - component: {fileID: 1669931934}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Sphere
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1795,7 +1848,7 @@ GameObject:
   - component: {fileID: 1685157360}
   - component: {fileID: 1685157359}
   - component: {fileID: 1685157358}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Sphere (5)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1902,7 +1955,7 @@ GameObject:
   - component: {fileID: 2103400215}
   - component: {fileID: 2103400214}
   - component: {fileID: 2103400213}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Sphere (2)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
