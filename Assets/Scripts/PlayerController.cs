@@ -19,6 +19,10 @@ public class PlayerController : MonoBehaviour
 
     private Rigidbody rb;
     private Animator animator;
+
+    [Header("地面判定")]
+    [SerializeField] private LayerMask groundMask; // 地面レイヤー指定
+    [SerializeField] private float groundCheckDistance = 0.3f; // 地面判定距離
     private bool isGrounded = true;
 
     //  右スティックカメラ制御用
@@ -40,6 +44,13 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        if (Input.GetButtonDown("Jump"))
+            Debug.Log("Jump detected");
+        if (Input.GetKeyDown(KeyCode.Space))
+            Debug.Log("Space detected");
+
+        CheckGrounded();
+
         HandleCameraRotation();
         HandleMovement();
         HandleJump();
@@ -64,6 +75,17 @@ public class PlayerController : MonoBehaviour
 
         Vector3 velocity = rb.velocity;
         Vector3 move = input.normalized * currentSpeed;
+
+        RaycastHit hit;
+        if (Physics.Raycast(transform.position + Vector3.up * 0.5f, move.normalized, out hit, 0.6f))
+        {
+            if (!hit.collider.CompareTag("Ground"))
+            {
+                // 壁方向に押しつけないよう、壁法線方向の成分を除去
+                Vector3 wallNormal = hit.normal;
+                move = Vector3.ProjectOnPlane(move, wallNormal).normalized * currentSpeed;
+            }
+        }
 
         velocity.x = move.x;
         velocity.z = move.z;
@@ -118,18 +140,31 @@ public class PlayerController : MonoBehaviour
         rb.velocity = vel;
     }
 
+    private bool jumpHeld = false;
+
     private void HandleJump()
     {
-        if ((Input.GetButtonDown("Jump") || Input.GetKeyDown(KeyCode.Space)) && isGrounded)
+        bool jumpPressed = Input.GetButtonDown("Jump") || Input.GetKeyDown(KeyCode.Space);
+        bool jumpHeldNow = Input.GetButton("Jump") || Input.GetKey(KeyCode.Space);
+
+        if (jumpPressed && isGrounded)
         {
             rb.velocity = new Vector3(rb.velocity.x, jumpPower, rb.velocity.z);
             isGrounded = false;
         }
 
-        if ((Input.GetButtonUp("Jump") || Input.GetKeyUp(KeyCode.Space)) && rb.velocity.y > 0f)
+        // 押していない瞬間だけcut（誤判定対策あり）
+        if (!jumpHeldNow && rb.velocity.y > 0f)
         {
             rb.velocity = new Vector3(rb.velocity.x, rb.velocity.y * jumpCutPower, rb.velocity.z);
         }
+    }
+
+
+    private void CheckGrounded()
+    {
+        Vector3 origin = transform.position + Vector3.up * 0.1f;
+        isGrounded = Physics.Raycast(origin, Vector3.down, groundCheckDistance, groundMask);
     }
 
     void OnCollisionStay(Collision collision)
