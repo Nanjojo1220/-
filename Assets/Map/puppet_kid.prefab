@@ -925,8 +925,8 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3450782638879609493}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 7, y: 0, z: -7.01}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -20.784678, y: -0.9140989, z: -10.928066}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -987,11 +987,11 @@ BoxCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3450782638879609493}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: ae187b772e1d863488b8311224bd8266, type: 2}
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Size: {x: 1, y: 2, z: 1}
+  m_Size: {x: 0.5, y: 2, z: 1}
   m_Center: {x: 0, y: 1, z: 0}
 --- !u!114 &734680916069829888
 MonoBehaviour:
@@ -1008,10 +1008,15 @@ MonoBehaviour:
   walkSpeed: 5
   dashMultiplier: 2
   rotationSpeed: 10
-  jumpPower: 9
-  jumpCutPower: 0.5
-  fallMultiplier: 2
-  lowJumpMultiplier: 2
+  jumpPower: 15
+  jumpCutPower: 0.8
+  jumpCutGravity: 20
+  fallMultiplier: 3
+  lowJumpMultiplier: 3
+  groundMask:
+    serializedVersion: 2
+    m_Bits: 65
+  groundCheckDistance: 0.3
   cameraPivot: {fileID: 0}
   cameraRotateSpeed: 120
 --- !u!1 &3900903643938384634

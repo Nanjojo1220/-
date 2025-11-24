@@ -10,8 +10,10 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float rotationSpeed = 10f; // 回転速度
 
     [Header("ジャンプ")]
-    [SerializeField] private float jumpPower = 16f;  // ジャンプ初速
+    [SerializeField] private float jumpPower = 8f;  // ジャンプ初速
     [SerializeField] private float jumpCutPower = 0.5f; // 小ジャンプ倍率
+    [SerializeField] private float jumpCutGravity = 35f;
+
 
     [Header("重力")]
     [SerializeField] private float fallMultiplier = 2.5f;
@@ -29,6 +31,8 @@ public class PlayerController : MonoBehaviour
     [Header("カメラ操作")]
     [SerializeField] private Transform cameraPivot;  // カメラの親（ターゲット）
     [SerializeField] private float cameraRotateSpeed = 120f;
+
+
 
     void Start()
     {
@@ -144,8 +148,8 @@ public class PlayerController : MonoBehaviour
 
     private void HandleJump()
     {
-        bool jumpPressed = Input.GetButtonDown("Jump") || Input.GetKeyDown(KeyCode.Space);
-        bool jumpHeldNow = Input.GetButton("Jump") || Input.GetKey(KeyCode.Space);
+        bool jumpPressed = Input.GetButtonDown("Jump");
+        bool jumpHeldNow = Input.GetButton("Jump");
 
         if (jumpPressed && isGrounded)
         {
@@ -153,12 +157,13 @@ public class PlayerController : MonoBehaviour
             isGrounded = false;
         }
 
-        // 押していない瞬間だけcut（誤判定対策あり）
+        // ★ Cut 重力（かなり強めでOK）
         if (!jumpHeldNow && rb.velocity.y > 0f)
         {
-            rb.velocity = new Vector3(rb.velocity.x, rb.velocity.y * jumpCutPower, rb.velocity.z);
+            rb.AddForce(Vector3.down * jumpCutGravity, ForceMode.Acceleration);
         }
     }
+
 
 
     private void CheckGrounded()
