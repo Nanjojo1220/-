@@ -36,8 +36,8 @@ ModelImporter:
       name: Puppet Kid | RigTest
       takeName: RigTest
       internalID: -8183481436779032286
-      firstFrame: 0
-      lastFrame: 389
+      firstFrame: 100
+      lastFrame: 200
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
