@@ -28,6 +28,13 @@ public class FallRespawn : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        // ▼ チェックポイントに触れたらリスポーン地点を更新
+        if (other.CompareTag("Checkpoint"))
+        {
+            respawnPoint = other.transform;
+            return;
+        }
+
         if (other.CompareTag("DeadZone") && !isRespawning)
         {
             StartCoroutine(RespawnRoutine());
