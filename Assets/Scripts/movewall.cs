@@ -8,6 +8,7 @@ public class movewall : MonoBehaviour
     [SerializeField] public float moveDistance = 3f; // Z方向に動く距離
     [SerializeField] public float moveSpeed = 2f;    // 移動速度
     [SerializeField] public float waitTime = 1f;     // 端で止まる時間
+    [SerializeField] public float startDelay = 1f;   // ★ 初動の待機時間（追加）
 
     private Vector3 startPos;
     private bool movingForward = true;
@@ -18,7 +19,9 @@ public class movewall : MonoBehaviour
     {
         startPos = transform.position;
         rb = GetComponent<Rigidbody>();
-        rb.isKinematic = true; // 必須
+        rb.isKinematic = true; 
+
+        waitTimer = startDelay; 
     }
 
     void FixedUpdate()
