@@ -1,23 +1,34 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
-using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
-using UnityEngine;
-using System.Collections.Specialized;
 
 public class CameraController : MonoBehaviour
 {
     [SerializeField] private GameObject player;
-    [SerializeField] private float sensitivity = 3.0f;
     [SerializeField] private float minYAngle = -30f;
     [SerializeField] private float maxYAngle = 60f;
     [SerializeField] private float followSmooth = 10f;
     [SerializeField] private float cameraDistance = 6f;
     [SerializeField] private float lookOffsetY = 1.5f;
     [SerializeField] private float verticalOffset = 2.0f;
+
+    [Header("Aim")]
+    [SerializeField] private float normalSensitivity = 3.0f;
+    [SerializeField] private float aimSensitivity = 1.2f;
+    [SerializeField] private float normalFOV = 60f;
+    [SerializeField] private float aimFOV = 40f;
+    [SerializeField] private float fovSmooth = 10f;
+
+    [Header("Aim Pitch Limit")]
+    [SerializeField] private float normalMinY = -30f;
+    [SerializeField] private float normalMaxY = 60f;
+
+    [SerializeField] private float aimMinY = -80f;  // ほぼ真下
+    [SerializeField] private float aimMaxY = 80f;   // ほぼ真上
+
+    [Header("Reticle Offset")]
+    [SerializeField] private float aimLookOffsetY = 1.8f; // 頭より上
+    [SerializeField] private float normalLookOffsetY = 1.5f;
+
 
     private float yaw;
     private float pitch;
@@ -38,6 +49,9 @@ public class CameraController : MonoBehaviour
     [SerializeField] private float rotateSmoothTime = 0.05f;
     private float yawVelocity;
     private float pitchVelocity;
+
+    public GameObject reticle;
+
 
     // Start is called before the first frame update
     void Start()
@@ -67,14 +81,23 @@ public class CameraController : MonoBehaviour
         if (Mathf.Abs(rightX) < deadZone) rightX = 0f;
         if (Mathf.Abs(rightY) < deadZone) rightY = 0f;
 
+        bool isAiming = Input.GetKey(KeyCode.JoystickButton6); // L2
 
-        float inputX = mouseX * sensitivity + rightX * sensitivity;
-        float inputY = mouseY * sensitivity + rightY * sensitivity;
+        float currentSensitivity = isAiming ? aimSensitivity : normalSensitivity;
+
+        float inputX = (mouseX + rightX) * currentSensitivity;
+        float inputY = (mouseY + rightY) * currentSensitivity;
+
 
 
         yaw += inputX;
         pitch -= inputY;
-        float clampedPitch = Mathf.Clamp(pitch, minYAngle, maxYAngle);
+
+        float minPitch = isAiming ? aimMinY : normalMinY;
+        float maxPitch = isAiming ? aimMaxY : normalMaxY;
+
+        float clampedPitch = Mathf.Clamp(pitch, minPitch, maxPitch);
+        pitch = clampedPitch;
 
         smoothYaw = Mathf.SmoothDampAngle(smoothYaw, yaw, ref yawVelocity, rotateSmoothTime);
         smoothPitch = Mathf.SmoothDampAngle(smoothPitch, pitch, ref pitchVelocity, rotateSmoothTime);
@@ -83,30 +106,36 @@ public class CameraController : MonoBehaviour
 
         Quaternion rotation = Quaternion.Euler(smoothPitch, smoothYaw, 0);
 
-        Vector3 targetCenter = player.transform.position + Vector3.up * verticalOffset;
-        Vector3 desiredPos = targetCenter - rotation * Vector3.forward * cameraDistance;
+        float lookY = isAiming ? aimLookOffsetY : normalLookOffsetY;
+        Vector3 targetCenter = player.transform.position + Vector3.up * lookY;
 
 
-        // --- キャラ → カメラへ Ray を飛ばす（遮蔽物チェック） ---
+        // ① まず理想のカメラ位置を計算
+        Vector3 desiredPos =
+            targetCenter
+            - rotation * Vector3.forward * cameraDistance;
+
         RaycastHit obstacleHit;
 
+        // ② その方向に SphereCast
+        Vector3 dir = (desiredPos - targetCenter).normalized;
         float currentDistance = cameraDistance;
 
-        if (Physics.Raycast(targetCenter, (desiredPos - targetCenter).normalized,
-                            out obstacleHit, cameraDistance, collisionMask))
+        if (Physics.SphereCast(
+                targetCenter,
+                cameraRadius,
+                dir,
+                out obstacleHit,
+                cameraDistance,
+                collisionMask
+            ))
         {
             GameObject hitObj = obstacleHit.collider.gameObject;
-            Renderer r = obstacleHit.collider.GetComponent<Renderer>();
 
-            // ★ Object レイヤーなら → 透過
+            // Object レイヤーは透過
             if (hitObj.layer == LayerMask.NameToLayer("Object"))
             {
-                // 前回の障害物を元に戻す
-                if (lastObstacleRenderer != null && lastObstacleRenderer != r)
-                {
-                    if (originalColors.ContainsKey(lastObstacleRenderer))
-                        lastObstacleRenderer.material.color = originalColors[lastObstacleRenderer];
-                }
+                Renderer r = hitObj.GetComponent<Renderer>();
 
                 if (r != null)
                 {
@@ -122,33 +151,36 @@ public class CameraController : MonoBehaviour
             }
             else
             {
-                // Object 以外 → 透過しない、カメラを寄せる
-                currentDistance = obstacleHit.distance - 0.3f;
+                // 壁など → カメラを寄せる
+                currentDistance = obstacleHit.distance - cameraRadius;
+                currentDistance = Mathf.Max(currentDistance, 0.5f);
 
-                // 透過を戻す
-                if (lastObstacleRenderer != null)
+                // 透過解除
+                if (lastObstacleRenderer != null &&
+                    originalColors.ContainsKey(lastObstacleRenderer))
                 {
-                    if (originalColors.ContainsKey(lastObstacleRenderer))
-                        lastObstacleRenderer.material.color = originalColors[lastObstacleRenderer];
-
+                    lastObstacleRenderer.material.color =
+                        originalColors[lastObstacleRenderer];
                     lastObstacleRenderer = null;
                 }
             }
         }
         else
         {
-            // 遮蔽物なし → 透過を戻す
-            if (lastObstacleRenderer != null)
+            // 何も当たっていない → 透過解除
+            if (lastObstacleRenderer != null &&
+                originalColors.ContainsKey(lastObstacleRenderer))
             {
-                if (originalColors.ContainsKey(lastObstacleRenderer))
-                    lastObstacleRenderer.material.color = originalColors[lastObstacleRenderer];
-
+                lastObstacleRenderer.material.color =
+                    originalColors[lastObstacleRenderer];
                 lastObstacleRenderer = null;
             }
         }
 
-        // ★ カメラの最終位置を再計算（ズームイン対応）
-        desiredPos = targetCenter - rotation * Vector3.forward * currentDistance;
+        // ③ 最終位置
+        desiredPos =
+            targetCenter
+            - rotation * Vector3.forward * currentDistance;
 
 
 
@@ -167,6 +199,16 @@ public class CameraController : MonoBehaviour
             transform.rotation,
             targetRot,
             Time.deltaTime * followSmooth
+            );
+
+
+        Camera cam = GetComponent<Camera>();
+        float targetFOV = isAiming ? aimFOV : normalFOV;
+        cam.fieldOfView = Mathf.Lerp(
+            cam.fieldOfView,
+            targetFOV,
+            Time.deltaTime * fovSmooth
+   
         );
 
 
@@ -176,6 +218,8 @@ public class CameraController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        bool isAiming = Input.GetKey(KeyCode.JoystickButton6);
+        reticle.SetActive(isAiming);
 
         float rh = Input.GetAxis("RightStickHorizontal");
         float rv = Input.GetAxis("RightStickVertical");
