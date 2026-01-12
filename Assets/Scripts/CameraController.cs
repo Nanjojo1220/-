@@ -1,64 +1,67 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEngine;
 
 public class CameraController : MonoBehaviour
 {
     [SerializeField] private GameObject player;
-    [SerializeField] private float minYAngle = -30f;
-    [SerializeField] private float maxYAngle = 60f;
+
+    [Header("Rotation Limit")]
+    [SerializeField] private float normalMinY = -30f;
+    [SerializeField] private float normalMaxY = 60f;
+    [SerializeField] private float aimMinY = -80f;
+    [SerializeField] private float aimMaxY = 80f;
+
+    [Header("Follow")]
     [SerializeField] private float followSmooth = 10f;
     [SerializeField] private float cameraDistance = 6f;
-    [SerializeField] private float lookOffsetY = 1.5f;
-    [SerializeField] private float verticalOffset = 2.0f;
+    [SerializeField] private float aimDistance = 4.5f;
 
-    [Header("Aim")]
+    [Header("Look Offset")]
+    [SerializeField] private float normalLookOffsetY = 1.5f;
+    [SerializeField] private float aimLookOffsetY = 1.8f;
+
+    [Header("Shoulder Offset (BOTW)")]
+    [SerializeField] private float normalShoulderOffsetX = 0.3f;
+    [SerializeField] private float aimShoulderOffsetX = 0.6f;
+
+    [Header("Sensitivity")]
     [SerializeField] private float normalSensitivity = 3.0f;
     [SerializeField] private float aimSensitivity = 1.2f;
+
+    [Header("FOV")]
     [SerializeField] private float normalFOV = 60f;
     [SerializeField] private float aimFOV = 40f;
     [SerializeField] private float fovSmooth = 10f;
 
-    [Header("Aim Pitch Limit")]
-    [SerializeField] private float normalMinY = -30f;
-    [SerializeField] private float normalMaxY = 60f;
+    [Header("Collision")]
+    [SerializeField] private LayerMask collisionMask;
+    [SerializeField] private float cameraRadius = 0.3f;
 
-    [SerializeField] private float aimMinY = -80f;  // ほぼ真下
-    [SerializeField] private float aimMaxY = 80f;   // ほぼ真上
+    [Header("Rotate Smooth")]
+    [SerializeField] private float rotateSmoothTime = 0.05f;
 
-    [Header("Reticle Offset")]
-    [SerializeField] private float aimLookOffsetY = 1.8f; // 頭より上
-    [SerializeField] private float normalLookOffsetY = 1.5f;
-
+    [Header("Reticle")]
+    public GameObject reticle;
 
     private float yaw;
     private float pitch;
-
-    // Dead Zone 
-    private float deadZone = 0.2f;
-
-    [SerializeField] private LayerMask collisionMask; // 衝突させたいレイヤー（例：Default, Environment）
-    [SerializeField] private float cameraRadius = 0.3f; // カメラがめり込まないための半径
-
-    private Vector3 camVelocity = Vector3.zero;
-    private Renderer lastObstacleRenderer = null;
-    private Dictionary<Renderer, Color> originalColors = new Dictionary<Renderer, Color>();
-
     private float smoothYaw;
     private float smoothPitch;
-
-    [SerializeField] private float rotateSmoothTime = 0.05f;
     private float yawVelocity;
     private float pitchVelocity;
 
-    public GameObject reticle;
+    private Vector3 camVelocity;
+    private float deadZone = 0.2f;
 
+    private Renderer lastObstacleRenderer;
+    private Dictionary<Renderer, Color> originalColors = new Dictionary<Renderer, Color>();
 
-    // Start is called before the first frame update
     void Start()
     {
         if (player == null)
         {
-            UnityEngine.Debug.LogError("CameraController: Playerが未設定です.");
+            UnityEngine.Debug.LogError("CameraController: Playerが未設定です");
             enabled = false;
             return;
         }
@@ -70,73 +73,61 @@ public class CameraController : MonoBehaviour
 
     void LateUpdate()
     {
+        bool isAiming = Input.GetKey(KeyCode.JoystickButton6); // L2
+
+        // --- 入力 ---
         float mouseX = Input.GetAxis("Mouse X");
         float mouseY = Input.GetAxis("Mouse Y");
-
-
         float rightX = Input.GetAxis("RightStickHorizontal");
         float rightY = Input.GetAxis("RightStickVertical");
-
 
         if (Mathf.Abs(rightX) < deadZone) rightX = 0f;
         if (Mathf.Abs(rightY) < deadZone) rightY = 0f;
 
-        bool isAiming = Input.GetKey(KeyCode.JoystickButton6); // L2
+        float sensitivity = isAiming ? aimSensitivity : normalSensitivity;
 
-        float currentSensitivity = isAiming ? aimSensitivity : normalSensitivity;
-
-        float inputX = (mouseX + rightX) * currentSensitivity;
-        float inputY = (mouseY + rightY) * currentSensitivity;
-
-
-
-        yaw += inputX;
-        pitch -= inputY;
+        yaw += (mouseX + rightX) * sensitivity;
+        pitch -= (mouseY + rightY) * sensitivity;
 
         float minPitch = isAiming ? aimMinY : normalMinY;
         float maxPitch = isAiming ? aimMaxY : normalMaxY;
-
-        float clampedPitch = Mathf.Clamp(pitch, minPitch, maxPitch);
-        pitch = clampedPitch;
+        pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
 
         smoothYaw = Mathf.SmoothDampAngle(smoothYaw, yaw, ref yawVelocity, rotateSmoothTime);
         smoothPitch = Mathf.SmoothDampAngle(smoothPitch, pitch, ref pitchVelocity, rotateSmoothTime);
 
-        pitch = clampedPitch;
-
         Quaternion rotation = Quaternion.Euler(smoothPitch, smoothYaw, 0);
 
+        // --- 注視点 ---
         float lookY = isAiming ? aimLookOffsetY : normalLookOffsetY;
         Vector3 targetCenter = player.transform.position + Vector3.up * lookY;
 
+        // --- BOTW右肩パラメータ ---
+        float shoulderX = isAiming ? aimShoulderOffsetX : normalShoulderOffsetX;
+        float distance = isAiming ? aimDistance : cameraDistance;
 
-        // ① まず理想のカメラ位置を計算
+        // --- 理想位置 ---
         Vector3 desiredPos =
             targetCenter
-            - rotation * Vector3.forward * cameraDistance;
+            - rotation * Vector3.forward * distance
+            + rotation * Vector3.right * shoulderX;
 
-        RaycastHit obstacleHit;
-
-        // ② その方向に SphereCast
+        // --- カメラ衝突処理 ---
         Vector3 dir = (desiredPos - targetCenter).normalized;
-        float currentDistance = cameraDistance;
+        float currentDistance = distance;
 
         if (Physics.SphereCast(
-                targetCenter,
-                cameraRadius,
-                dir,
-                out obstacleHit,
-                cameraDistance,
-                collisionMask
-            ))
+            targetCenter,
+            cameraRadius,
+            dir,
+            out RaycastHit hit,
+            distance,
+            collisionMask
+        ))
         {
-            GameObject hitObj = obstacleHit.collider.gameObject;
-
-            // Object レイヤーは透過
-            if (hitObj.layer == LayerMask.NameToLayer("Object"))
+            if (hit.collider.gameObject.layer == LayerMask.NameToLayer("Object"))
             {
-                Renderer r = hitObj.GetComponent<Renderer>();
-
+                Renderer r = hit.collider.GetComponent<Renderer>();
                 if (r != null)
                 {
                     if (!originalColors.ContainsKey(r))
@@ -145,17 +136,13 @@ public class CameraController : MonoBehaviour
                     Color c = originalColors[r];
                     c.a = 0.3f;
                     r.material.color = c;
-
                     lastObstacleRenderer = r;
                 }
             }
             else
             {
-                // 壁など → カメラを寄せる
-                currentDistance = obstacleHit.distance - cameraRadius;
-                currentDistance = Mathf.Max(currentDistance, 0.5f);
+                currentDistance = Mathf.Max(hit.distance - cameraRadius, 0.5f);
 
-                // 透過解除
                 if (lastObstacleRenderer != null &&
                     originalColors.ContainsKey(lastObstacleRenderer))
                 {
@@ -167,7 +154,6 @@ public class CameraController : MonoBehaviour
         }
         else
         {
-            // 何も当たっていない → 透過解除
             if (lastObstacleRenderer != null &&
                 originalColors.ContainsKey(lastObstacleRenderer))
             {
@@ -177,52 +163,35 @@ public class CameraController : MonoBehaviour
             }
         }
 
-        // ③ 最終位置
-        desiredPos =
+        // --- 最終位置（右肩維持） ---
+        Vector3 finalPos =
             targetCenter
-            - rotation * Vector3.forward * currentDistance;
+            - rotation * Vector3.forward * currentDistance
+            + rotation * Vector3.right * shoulderX;
 
-
-
-
-        // --- カメラ位置追従（SmoothDampで揺れを抑制） ---
         transform.position = Vector3.SmoothDamp(
             transform.position,
-            desiredPos,
+            finalPos,
             ref camVelocity,
-            0.2f  // ← 小さくするほどキビキビ、大きいほど安定
+            0.2f
         );
 
-        // --- 回転（Yaw/Pitch から生成） ---
-        Quaternion targetRot = Quaternion.Euler(smoothPitch, smoothYaw, 0);
         transform.rotation = Quaternion.Slerp(
             transform.rotation,
-            targetRot,
+            rotation,
             Time.deltaTime * followSmooth
-            );
-
-
-        Camera cam = GetComponent<Camera>();
-        float targetFOV = isAiming ? aimFOV : normalFOV;
-        cam.fieldOfView = Mathf.Lerp(
-            cam.fieldOfView,
-            targetFOV,
-            Time.deltaTime * fovSmooth
-   
         );
 
-
-
+        // --- FOV ---
+        Camera cam = GetComponent<Camera>();
+        float targetFOV = isAiming ? aimFOV : normalFOV;
+        cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, targetFOV, Time.deltaTime * fovSmooth);
     }
 
-    // Update is called once per frame
     void Update()
     {
         bool isAiming = Input.GetKey(KeyCode.JoystickButton6);
-        reticle.SetActive(isAiming);
-
-        float rh = Input.GetAxis("RightStickHorizontal");
-        float rv = Input.GetAxis("RightStickVertical");
-
+        if (reticle != null)
+            reticle.SetActive(isAiming);
     }
 }

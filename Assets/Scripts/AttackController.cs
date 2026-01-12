@@ -3,60 +3,76 @@ using UnityEngine;
 
 public class AttackController : MonoBehaviour
 {
+    [Header("Reference")]
     [SerializeField] private Transform shootPoint;
     [SerializeField] private Camera mainCamera;
+
+    [Header("Shoot")]
     [SerializeField] private float range = 100f;
+    [SerializeField] private float minAimDistance = 1.5f;
     [SerializeField] private LayerMask hitMask;
     [SerializeField] private GameObject bulletPrefab;
     [SerializeField] private float bulletSpeed = 30f;
 
-
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.JoystickButton7)) // R2
+        bool isAiming = Input.GetKey(KeyCode.JoystickButton6); // L2
+
+        // š AIM’†‚Ì‚İ”­Ë‰Â”\
+        if (isAiming && Input.GetKeyDown(KeyCode.JoystickButton7)) // R2
         {
             Shoot();
         }
     }
 
-
     void Shoot()
     {
-        // ‡@ ƒJƒƒ‰’†‰›‚©‚ç Ray
+        if (shootPoint == null || mainCamera == null) return;
+
+        // --- ‡@ ƒJƒƒ‰’†‰›‚©‚ç Ray ---
         Ray camRay = mainCamera.ViewportPointToRay(
-    new Vector3(0.5f, 0.5f, 0f)
-);
+            new Vector3(0.5f, 0.5f, 0f)
+        );
 
-
-        Vector3 targetPoint;
+        Vector3 aimPoint;
 
         if (Physics.Raycast(camRay, out RaycastHit camHit, range, hitMask))
         {
-            targetPoint = camHit.point;   // ƒJƒƒ‰‚ªŒ©‚Ä‚¢‚éêŠ
+            if (camHit.distance < minAimDistance)
+            {
+                aimPoint = camRay.GetPoint(range);
+            }
+            else
+            {
+                aimPoint = camHit.point;
+            }
         }
         else
         {
-            targetPoint = camRay.GetPoint(range);
+            aimPoint = camRay.GetPoint(range);
         }
 
-        // ‡A eŒûi‚Ü‚½‚ÍƒLƒƒƒ‰j‚©‚ç targetPoint ‚ÖŒü‚¯‚é
-        Vector3 shootDir = (targetPoint - shootPoint.position).normalized;
+        // --- ‡A eŒû ¨ Æ€“_ ---
+        Vector3 shootDir = (aimPoint - shootPoint.position).normalized;
 
+        // --- ‡B ’e¶¬ ---
         GameObject bullet = Instantiate(
-        bulletPrefab,
-        shootPoint.position + shootDir * 0.2f,   // © ­‚µ‘O
-        Quaternion.LookRotation(shootDir)
-    );
+            bulletPrefab,
+            shootPoint.position + shootDir * 0.2f,
+            Quaternion.LookRotation(shootDir)
+        );
 
-        // ‡C ’e‚É•ûŒü‚ğ“n‚·
+        // --- ‡C ’e‚É•ûŒü‚ğ“n‚· ---
         Bullet bulletScript = bullet.GetComponent<Bullet>();
-        bulletScript.Init(shootDir);
+        if (bulletScript != null)
+        {
+            bulletScript.Init(shootDir);
+        }
 
-        // ‡D ³Šm‚È“–‚½‚è”»’èiRayj
+        // --- ‡D ³Šm‚ÈRay”»’è ---
         if (Physics.Raycast(shootPoint.position, shootDir, out RaycastHit hit, range, hitMask))
         {
             UnityEngine.Debug.Log("Hit : " + hit.collider.name);
         }
     }
-       
-    }
+}
