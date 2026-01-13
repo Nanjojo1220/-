@@ -273,9 +273,9 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: bd0b178e3cf5aed4bb6493d77d2ad5cd, type: 3}
---- !u!4 &1653996946 stripped
+--- !u!4 &1356733651 stripped
 Transform:
-  m_CorrespondingSourceObject: {fileID: 5034114602761618135, guid: 5f8a9408bb61f7d4ea5b928b5d79771e, type: 3}
+  m_CorrespondingSourceObject: {fileID: 5034114602298954409, guid: 5f8a9408bb61f7d4ea5b928b5d79771e, type: 3}
   m_PrefabInstance: {fileID: 6112640199636314859}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &1760781302 stripped
@@ -288,7 +288,7 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 5034114603486733670, guid: 5f8a9408bb61f7d4ea5b928b5d79771e, type: 3}
   m_PrefabInstance: {fileID: 6112640199636314859}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1930239195
+--- !u!114 &1930239203
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -300,12 +300,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8541028e7f4d33a468d0183d6570c19c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shootPoint: {fileID: 1653996946}
+  shootPoint: {fileID: 1356733651}
   mainCamera: {fileID: 918851513}
   range: 100
+  minAimDistance: 1.5
   hitMask:
     serializedVersion: 2
-    m_Bits: 1
+    m_Bits: 65
   bulletPrefab: {fileID: 1760781302}
   bulletSpeed: 30
 --- !u!1001 &1973586707
@@ -733,6 +734,10 @@ PrefabInstance:
       value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 5034114602292124282, guid: 5f8a9408bb61f7d4ea5b928b5d79771e, type: 3}
+      propertyPath: aimDistance
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5034114602292124282, guid: 5f8a9408bb61f7d4ea5b928b5d79771e, type: 3}
       propertyPath: aimSideOffset
       value: 1
       objectReference: {fileID: 0}
@@ -741,8 +746,16 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5034114602292124282, guid: 5f8a9408bb61f7d4ea5b928b5d79771e, type: 3}
+      propertyPath: cameraDistance
+      value: 5.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5034114602292124282, guid: 5f8a9408bb61f7d4ea5b928b5d79771e, type: 3}
       propertyPath: normalSensitivity
-      value: 1.5
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 5034114602292124282, guid: 5f8a9408bb61f7d4ea5b928b5d79771e, type: 3}
+      propertyPath: normalShoulderOffsetX
+      value: 0.25
       objectReference: {fileID: 0}
     - target: {fileID: 5034114603486733670, guid: 5f8a9408bb61f7d4ea5b928b5d79771e, type: 3}
       propertyPath: m_Layer
