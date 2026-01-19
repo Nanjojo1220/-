@@ -35,6 +35,11 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private Transform cameraPivot;
     [SerializeField] private float cameraRotateSpeed = 120f;
 
+
+    [SerializeField] private float deathY = -10f;
+    private bool isDead = false;
+   
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -55,6 +60,16 @@ public class PlayerController : MonoBehaviour
         HandleCameraRotation();
         HandleMovement();
         HandleJump();
+
+        if (!isDead && transform.position.y < deathY)
+        {
+            isDead = true;
+        }
+    }
+
+    public void ResetDeathFlag()
+    {
+        isDead = false;
     }
 
     private void HandleMovement()
@@ -198,6 +213,8 @@ public class PlayerController : MonoBehaviour
         if (collision.gameObject.CompareTag("Ground"))
             isGrounded = false;
     }
+
+
 }
 
 
