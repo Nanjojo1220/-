@@ -2,18 +2,25 @@ using UnityEngine;
 
 public class MoveFloor : MonoBehaviour
 {
+    public enum MoveDirection
+    {
+        X,
+        Y,
+        Z
+    }
+
     [Header("動き")]
-    [SerializeField] public float moveDistance = 3f;
-    [SerializeField] public float moveSpeed = 2f;
-    [SerializeField] public float waitTime = 1f;
-    [SerializeField] public float startDelay = 1f;
+    [SerializeField] private MoveDirection direction = MoveDirection.Z;
+    [SerializeField] private float moveDistance = 3f;
+    [SerializeField] private float moveSpeed = 2f;
+    [SerializeField] private float waitTime = 1f;
+    [SerializeField] private float startDelay = 0f;
 
     private Vector3 startPos;
     private bool movingForward = true;
     private float waitTimer = 0f;
     private Rigidbody rb;
 
-    // ★ 追加：起動フラグ
     private bool isActive = false;
 
     void Start()
@@ -22,6 +29,7 @@ public class MoveFloor : MonoBehaviour
         rb = GetComponent<Rigidbody>();
 
         rb.isKinematic = true;
+        rb.useGravity = false;
         rb.interpolation = RigidbodyInterpolation.Interpolate;
 
         waitTimer = startDelay;
@@ -29,7 +37,6 @@ public class MoveFloor : MonoBehaviour
 
     void FixedUpdate()
     {
-        // ★ 起動するまで何もしない
         if (!isActive) return;
 
         if (waitTimer > 0f)
@@ -38,8 +45,8 @@ public class MoveFloor : MonoBehaviour
             return;
         }
 
-        Vector3 targetPos =
-            startPos + new Vector3(0, 0, movingForward ? moveDistance : -moveDistance);
+        Vector3 dir = GetDirectionVector();
+        Vector3 targetPos = startPos + dir * (movingForward ? moveDistance : -moveDistance);
 
         Vector3 nextPos = Vector3.MoveTowards(
             rb.position,
@@ -56,7 +63,17 @@ public class MoveFloor : MonoBehaviour
         }
     }
 
-    // ★ 外部から呼ぶ起動用メソッド
+    Vector3 GetDirectionVector()
+    {
+        switch (direction)
+        {
+            case MoveDirection.X: return Vector3.right;
+            case MoveDirection.Y: return Vector3.up;
+            case MoveDirection.Z: return Vector3.forward;
+            default: return Vector3.forward;
+        }
+    }
+
     public void Activate()
     {
         isActive = true;
