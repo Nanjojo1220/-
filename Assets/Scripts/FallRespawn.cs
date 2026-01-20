@@ -1,43 +1,73 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class FallRespawn : MonoBehaviour
 {
-    [Header("設定")]
-    public Transform respawnPoint;
-    public float respawnDelay = 1f;
+    [Header("残機")]
+    [SerializeField] private int maxLives = 3;
+    private int currentLives;
+
+    [Header("UI")]
+    [SerializeField] private LifeUI lifeUI;
+
+    [Header("リスポーン")]
+    [SerializeField] private Transform respawnPoint;
 
     [Header("演出")]
-    public float shrinkDuration = 0.5f;
-    public float minScale = 0.1f;
+    [SerializeField] private float shrinkDuration = 0.5f;
+    [SerializeField] private float minScale = 0.1f;
 
     [Header("効果音")]
-    public AudioSource audioSource;     // ★ 効果音用
-    public AudioClip fallSE;            // ★ 落下時の効果音
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip fallSE;
 
-    private bool isRespawning = false;
+    private bool isRespawning;
     private Vector3 originalScale;
-
     private Animator animator;
+    private Rigidbody rb;
+
+    private void Awake()
+    {
+        animator = GetComponent<Animator>();
+        rb = GetComponent<Rigidbody>();
+        originalScale = transform.localScale;
+
+        currentLives = maxLives;
+    }
 
     private void Start()
     {
-        originalScale = transform.localScale;
-        animator = GetComponent<Animator>();
+        // ★ UI初期化（超重要）
+        if (lifeUI != null)
+            lifeUI.UpdateHearts(currentLives);
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        // ▼ チェックポイントに触れたらリスポーン地点を更新
+        // チェックポイント更新
         if (other.CompareTag("Checkpoint"))
         {
             respawnPoint = other.transform;
             return;
         }
 
+        // 落下
         if (other.CompareTag("DeadZone") && !isRespawning)
         {
-            StartCoroutine(RespawnRoutine());
+            currentLives--;
+
+            if (lifeUI != null)
+                lifeUI.UpdateHearts(currentLives);
+
+            if (currentLives > 0)
+            {
+                StartCoroutine(RespawnRoutine());
+            }
+            else
+            {
+                SceneManager.LoadScene("GameOver");
+            }
         }
     }
 
@@ -45,56 +75,47 @@ public class FallRespawn : MonoBehaviour
     {
         isRespawning = true;
 
-        // ▼ 効果音再生
-        if (audioSource != null && fallSE != null)
-        {
+        // 効果音
+        if (audioSource && fallSE)
             audioSource.PlayOneShot(fallSE);
-        }
 
-        // ▼ 落下アニメ再生
-        if (animator != null)
+        // アニメーション開始
+        if (animator)
             animator.SetTrigger("Fall");
 
-        // ▼ Rigidbody 停止
-        Rigidbody rb = GetComponent<Rigidbody>();
-        if (rb != null)
-        {
-            rb.velocity = Vector3.zero;
-            rb.isKinematic = true;
-        }
+        // Rigidbody停止
+        rb.velocity = Vector3.zero;
+        rb.isKinematic = true;
 
-        // ▼ 縮小演出
-        float t = 0;
-        Vector3 startScale = transform.localScale;
-        Vector3 endScale = originalScale * minScale;
-
+        // 縮小演出
+        float t = 0f;
         while (t < shrinkDuration)
         {
             t += Time.deltaTime;
-            transform.localScale = Vector3.Lerp(startScale, endScale, t / shrinkDuration);
+            transform.localScale = Vector3.Lerp(
+                originalScale,
+                originalScale * minScale,
+                t / shrinkDuration
+            );
             yield return null;
         }
 
-        // ▼ リスポーン位置にワープ
-        transform.position = respawnPoint.position;
+        // リスポーン
+        if (respawnPoint != null)
+            transform.position = respawnPoint.position;
 
-        // ▼ サイズを復元
         transform.localScale = originalScale;
 
-        // ▼ 待機
-        yield return new WaitForSeconds(respawnDelay);
+        yield return new WaitForSeconds(0.1f);
 
-        // ▼ Idle に戻す
-        if (animator != null)
+        // ★ アニメーション完全リセット（重要）
+        if (animator)
         {
             animator.ResetTrigger("Fall");
-            animator.Play("Idle");   // Idleへ強制遷移
+            animator.Play("Idle", 0, 0f);
         }
 
-        // ▼ Rigidbody復活
-        if (rb != null)
-            rb.isKinematic = false;
-
+        rb.isKinematic = false;
         isRespawning = false;
     }
 }
