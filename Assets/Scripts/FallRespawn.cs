@@ -22,7 +22,15 @@ public class FallRespawn : MonoBehaviour
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip fallSE;
 
+    [Header("BGM")]
+    [SerializeField] private AudioSource bgmSource;
+
+    [SerializeField] private AudioClip checkpointBGM; // チェックポイント到達
+    [SerializeField] private AudioClip gameOverBGM;   // ゲームオーバー
+
+
     private bool isRespawning;
+    private bool checkpointPlayed = false;
     private Vector3 originalScale;
     private Animator animator;
     private Rigidbody rb;
@@ -49,6 +57,12 @@ public class FallRespawn : MonoBehaviour
         if (other.CompareTag("Checkpoint"))
         {
             respawnPoint = other.transform;
+
+            if (!checkpointPlayed && bgmSource && checkpointBGM)
+            {
+                bgmSource.PlayOneShot(checkpointBGM);
+                checkpointPlayed = true;
+            }
             return;
         }
 
@@ -64,12 +78,32 @@ public class FallRespawn : MonoBehaviour
             {
                 StartCoroutine(RespawnRoutine());
             }
+
             else
             {
-                SceneManager.LoadScene("GameOver");
+                StartCoroutine(GameOverSequence());
             }
+
         }
     }
+
+    private IEnumerator GameOverSequence()
+    {
+        isRespawning = true;
+
+        if (bgmSource && gameOverBGM)
+        {
+            bgmSource.Stop();
+            bgmSource.clip = gameOverBGM;
+            bgmSource.loop = false;
+            bgmSource.Play();
+        }
+
+        yield return new WaitForSeconds(2.5f);
+
+        SceneManager.LoadScene("GameOver");
+    }
+
 
     private IEnumerator RespawnRoutine()
     {

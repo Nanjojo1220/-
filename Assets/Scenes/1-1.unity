@@ -503,6 +503,17 @@ MonoBehaviour:
     m_Bits: 65
   bulletPrefab: {fileID: 1760781302}
   bulletSpeed: 30
+--- !u!114 &1930239206 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5034114603486733673, guid: 5f8a9408bb61f7d4ea5b928b5d79771e, type: 3}
+  m_PrefabInstance: {fileID: 6112640199636314859}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1930239194}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 24d0d5a81199a994ebaf2de39a71d2b5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &1973586707
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -841,9 +852,21 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1621659941645679774, guid: 53369225826c8124692a9e98c53c295c, type: 3}
+      propertyPath: starCoinGoal
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1621659941645679774, guid: 53369225826c8124692a9e98c53c295c, type: 3}
+      propertyPath: playerController
+      value: 
+      objectReference: {fileID: 1930239206}
     - target: {fileID: 1621659942218849948, guid: 53369225826c8124692a9e98c53c295c, type: 3}
       propertyPath: m_Name
       value: Canvas
+      objectReference: {fileID: 0}
+    - target: {fileID: 1621659942218849950, guid: 53369225826c8124692a9e98c53c295c, type: 3}
+      propertyPath: m_PresetInfoIsWorld
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1621659942218849952, guid: 53369225826c8124692a9e98c53c295c, type: 3}
       propertyPath: m_Pivot.x
@@ -879,6 +902,18 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1621659942218849952, guid: 53369225826c8124692a9e98c53c295c, type: 3}
       propertyPath: m_SizeDelta.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1621659942218849952, guid: 53369225826c8124692a9e98c53c295c, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1621659942218849952, guid: 53369225826c8124692a9e98c53c295c, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1621659942218849952, guid: 53369225826c8124692a9e98c53c295c, type: 3}
+      propertyPath: m_LocalScale.z
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1621659942218849952, guid: 53369225826c8124692a9e98c53c295c, type: 3}
@@ -933,6 +968,10 @@ PrefabInstance:
       propertyPath: m_Camera
       value: 
       objectReference: {fileID: 918851513}
+    - target: {fileID: 1621659942218849953, guid: 53369225826c8124692a9e98c53c295c, type: 3}
+      propertyPath: m_RenderMode
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1621659942940402296, guid: 53369225826c8124692a9e98c53c295c, type: 3}
       propertyPath: m_AnchoredPosition.x
       value: 120

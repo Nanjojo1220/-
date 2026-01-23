@@ -1,5 +1,8 @@
 using UnityEngine;
 using TMPro;
+using UnityEngine.SceneManagement;
+using System.Diagnostics;
+using System.Collections;
 
 public class CoinManager : MonoBehaviour
 {
@@ -21,6 +24,18 @@ public class CoinManager : MonoBehaviour
     [Header("スターコイン必要数")]
     public int starCoinGoal = 5; // Inspector で変更可
 
+    [Header("クリア演出")]
+    [SerializeField] private AudioSource bgmSource;
+    [SerializeField] private AudioClip clearBGM;
+    [SerializeField] private float clearWaitTime = 2f;
+    [SerializeField] private string clearSceneName = "GameClear";
+
+    [Header("プレイヤー制御")]
+    [SerializeField] private MonoBehaviour playerController;
+
+
+    private bool isCleared = false;
+
     private void Start()
     {
         UpdateUI();
@@ -31,9 +46,10 @@ public class CoinManager : MonoBehaviour
         starCoinCount++;
         UpdateUI();
 
-        if (IsGoal())
-        {
-            UnityEngine.Debug.Log("スターコインを全て取得！クリア可能！");
+        if(IsGoal() && !isCleared)
+    {
+            isCleared = true;
+            StartCoroutine(ClearSequence());
         }
     }
 
@@ -56,4 +72,25 @@ public class CoinManager : MonoBehaviour
     {
         return starCoinCount >= starCoinGoal;
     }
+
+    IEnumerator ClearSequence()
+    {
+        // ★ 操作停止
+        if (playerController != null)
+            playerController.enabled = false;
+
+        // BGM 再生など
+        if (bgmSource != null && clearBGM != null)
+        {
+            bgmSource.Stop();
+            bgmSource.clip = clearBGM;
+            bgmSource.Play();
+        }
+
+        yield return new WaitForSeconds(clearWaitTime);
+
+        SceneManager.LoadScene(clearSceneName);
+    }
+
+
 }
